@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>For Muskan</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Space+Grotesk:wght@300;500;700&family=Dancing+Script:wght@700&family=Cinzel:wght@500&display=swap" rel="stylesheet">
+    
+    <!-- GSAP for Animation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/TextPlugin.min.js"></script>
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #020205; /* Darker, deeper black */
+            --text-main: #ffffff;
+            --accent-1: #ff0055; /* Deep Romantic Red/Pink */
+            --accent-2: #d946ef; /* Neon Fuchsia */
+            --gold: #ffd700;
+            --glass: rgba(20, 20, 20, 0.6);
+            --border: rgba(255, 0, 85, 0.3);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; cursor: none; }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Space Grotesk', sans-serif;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* --- Backgrounds --- */
+        #noise-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; opacity: 0.25; pointer-events: none; }
+        #butterfly-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+
+        /* --- Cursor --- */
+        .cursor-dot {
+            position: fixed; top: 0; left: 0; width: 8px; height: 8px; 
+            background-color: var(--accent-1); border-radius: 50%; z-index: 9999; pointer-events: none; transform: translate(-50%, -50%);
+        }
+        .cursor-outline {
+            position: fixed; top: 0; left: 0; width: 40px; height: 40px;
+            border: 1px solid var(--accent-1); border-radius: 50%; z-index: 9999; pointer-events: none; transform: translate(-50%, -50%);
+            transition: all 0.1s ease-out;
+        }
+
+        /* --- Main Layout --- */
+        .main-container {
+            position: relative; z-index: 10; height: 100vh;
+            display: flex; justify-content: center; align-items: center; perspective: 1000px;
+        }
+
+        .scene {
+            position: absolute; width: 90%; max-width: 800px; text-align: center;
+            opacity: 0; visibility: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+
+        /* --- Typography --- */
+        h1 {
+            font-family: 'Playfair Display', serif; font-size: 3.5rem; line-height: 1.1; margin-bottom: 1.5rem;
+            background: linear-gradient(to bottom, #fff, #ffcce0); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+
+        .highlight-name {
+            display: block; font-size: 6rem; font-weight: 700;
+            background-image: linear-gradient(to right, var(--accent-1), var(--accent-2));
+            background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 50px rgba(255, 0, 85, 0.4);
+            letter-spacing: -2px; margin-top: 10px;
+        }
+
+        p { font-size: 1.3rem; line-height: 1.6; color: #cbd5e1; margin-bottom: 2rem; max-width: 600px; }
+
+        /* --- Buttons --- */
+        .btn {
+            padding: 18px 45px; background: rgba(255, 0, 85, 0.1); border: 1px solid var(--border);
+            color: white; font-family: 'Cinzel', serif; font-weight: 600; text-transform: uppercase; letter-spacing: 3px;
+            font-size: 0.9rem; position: relative; overflow: hidden; transition: all 0.4s ease;
+            backdrop-filter: blur(10px); border-radius: 50px; cursor: none;
+        }
+        .btn:hover { border-color: var(--accent-1); box-shadow: 0 0 30px rgba(255, 0, 85, 0.4); transform: scale(1.05); background: rgba(255, 0, 85, 0.2); }
+        
+        .btn-yes {
+            background: var(--accent-1); border: none; font-size: 1.2rem; padding: 20px 60px;
+            box-shadow: 0 0 40px rgba(255, 0, 85, 0.6); animation: pulse-gold 2s infinite;
+        }
+
+        @keyframes pulse-gold {
+            0% { box-shadow: 0 0 0 0 rgba(255, 0, 85, 0.7); }
+            70% { box-shadow: 0 0 0 20px rgba(255, 0, 85, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 0, 85, 0); }
+        }
+
+        /* --- SURPRISE POPUP (The Heart) --- */
+        #surprise-popup {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 100; display: flex; justify-content: center; align-items: center;
+            background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px); visibility: hidden; opacity: 0;
+        }
+        .popup-content {
+            border: 1px solid rgba(255,255,255,0.1); padding: 60px; border-radius: 30px; text-align: center;
+            background: radial-gradient(circle at center, rgba(30,0,10,0.9), rgba(0,0,0,1));
+            box-shadow: 0 0 80px rgba(255, 0, 85, 0.15); transform: scale(0.8);
+        }
+        .popup-heart {
+            font-size: 5rem; margin-bottom: 20px; display: inline-block;
+            background: linear-gradient(to bottom, #ff0055, #ff5e90); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 20px rgba(255,0,85,0.5)); animation: heartbeat 1.2s infinite ease-in-out;
+        }
+        .cute-shayari {
+            font-family: 'Dancing Script', cursive; font-size: 3.5rem; color: #fff; margin-bottom: 40px;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.3); line-height: 1.2;
+        }
+        @keyframes heartbeat {
+            0% { transform: scale(1); } 15% { transform: scale(1.2); } 30% { transform: scale(1); } 45% { transform: scale(1.1); } 60% { transform: scale(1); }
+        }
+
+        /* --- The Proposal Shayari Text --- */
+        .shayari-container { margin-bottom: 30px; }
+        .shayari-text {
+            font-family: 'Playfair Display', serif; font-style: italic; font-size: 1.8rem; line-height: 2; color: #e2e8f0;
+            opacity: 0; transform: translateY(20px);
+        }
+        .final-line {
+            font-size: 2.2rem; color: var(--accent-1); font-weight: 700; margin-top: 20px; 
+            text-shadow: 0 0 20px rgba(255,0,85,0.4);
+        }
+
+        /* --- Progress Bar --- */
+        .progress-container { position: absolute; bottom: 40px; width: 200px; height: 2px; background: rgba(255,255,255,0.1); }
+        .progress-bar { height: 100%; background: var(--accent-1); width: 0%; transition: width 1s ease; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            h1 { font-size: 2rem; } .highlight-name { font-size: 3.5rem; }
+            .shayari-text { font-size: 1.2rem; } .cute-shayari { font-size: 2.5rem; }
+            .popup-content { width: 90%; padding: 40px 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="noise-canvas"></canvas>
+    <canvas id="butterfly-canvas"></canvas>
+    
+    <!-- Custom Cursor -->
+    <div class="cursor-dot" data-cursor-dot></div>
+    <div class="cursor-outline" data-cursor-outline></div>
+
+    <div class="main-container">
+        
+        <!-- Scene 1: Intro -->
+        <div class="scene" id="scene-1">
+            <p style="text-transform: uppercase; letter-spacing: 5px; color: var(--accent-1); font-size: 0.8rem;">Incoming Priority Message</p>
+            <h1>Subject: My Heart</h1>
+            <p>Today isn't just a birthday.<br>It's the day the world became beautiful.</p>
+            <button class="btn" onclick="nextScene(1)">Open Transmission</button>
+        </div>
+
+        <!-- Scene 2: The Name -->
+        <div class="scene" id="scene-2">
+            <p style="text-transform: uppercase; letter-spacing: 3px; margin-bottom: 0;">Happy Birthday to</p>
+            <h1 class="highlight-name">MUSKAN</h1>
+            <p class="fade-in-text">The one who taught me what love actually means.</p>
+            <button class="btn" onclick="nextScene(2)">Proceed</button>
+        </div>
+
+        <!-- Scene 3: The Build Up -->
+        <div class="scene" id="scene-3">
+            <h1>I have a question for 2026</h1>
+            <p>But before I ask you anything...<br>I need to tell you something that my heart screams every second.</p>
+            <div style="margin: 20px 0; font-size: 2rem; color: var(--gold);">❤️</div>
+            <button class="btn" onclick="triggerPopup()">Listen Closely</button>
+        </div>
+
+        <!-- The POPUP (Emotional Core) -->
+        <div id="surprise-popup">
+            <div class="popup-content">
+                <div class="popup-heart">❤</div>
+                <div class="cute-shayari">"Tmr lagi mor dil ru"</div>
+                <p style="font-size: 0.9rem; opacity: 0.7; letter-spacing: 2px;">( From the depths of my soul )</p>
+                <br>
+                <button class="btn" onclick="closePopupAndProceed()">Continue Journey</button>
+            </div>
+        </div>
+
+        <!-- Scene 4: The Proposal -->
+        <div class="scene" id="scene-4">
+            <div class="shayari-container">
+                <div class="shayari-text line-1">"Mujhse pyar karne ki bhool kar"</div>
+                <div class="shayari-text line-2">"Mere liya apna alag usool kar"</div>
+                <div class="shayari-text line-3">"Me jesa bhi hun"</div>
+                <div class="shayari-text line-4">"Tera hun tu meri ban"</div>
+                <div class="shayari-text line-5 final-line">"Mujhe qubool kar.."</div>
+            </div>
+            
+            <div id="proposal-ui" style="opacity: 0; visibility: hidden; margin-top: 30px;">
+                <p style="font-size: 0.9rem; letter-spacing: 3px; margin-bottom: 20px;">MUSKAN, WILL YOU BE MINE?</p>
+                <button class="btn btn-yes" onclick="sheSaidYes()">YES, I ACCEPT</button>
+            </div>
+        </div>
+
+        <!-- Progress -->
+        <div class="progress-container">
+            <div class="progress-bar" id="progress-bar"></div>
+        </div>
+    </div>
+
+    <script>
+        // --- Custom Cursor ---
+        const cursorDot = document.querySelector('[data-cursor-dot]');
+        const cursorOutline = document.querySelector('[data-cursor-outline]');
+        window.addEventListener('mousemove', (e) => {
+            cursorDot.style.left = `${e.clientX}px`; cursorDot.style.top = `${e.clientY}px`;
+            cursorOutline.animate({ left: `${e.clientX}px`, top: `${e.clientY}px` }, { duration: 400, fill: "forwards" });
+        });
+
+        // --- Butterfly System (Red/Pink Theme) ---
+        const canvas = document.getElementById('butterfly-canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+        let butterflies = [];
+
+        class Butterfly {
+            constructor() {
+                this.x = Math.random() * canvas.width; this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 0.6 + 0.3;
+                this.speedX = (Math.random() * 1) - 0.5; this.speedY = (Math.random() * 1) - 0.5;
+                this.color = Math.random() > 0.5 ? '#ff0055' : '#d946ef'; // Red & Pink
+                this.frame = 0;
+            }
+            update() {
+                this.x += this.speedX; this.y += this.speedY; this.frame += 0.1;
+                if (this.x < -50) this.x = canvas.width + 50; if (this.x > canvas.width + 50) this.x = -50;
+                if (this.y < -50) this.y = canvas.height + 50; if (this.y > canvas.height + 50) this.y = -50;
+            }
+            draw() {
+                ctx.save(); ctx.translate(this.x, this.y);
+                const angle = Math.atan2(this.speedY, this.speedX);
+                ctx.rotate(angle + Math.PI / 2); ctx.scale(this.size, this.size);
+                const wing = Math.abs(Math.sin(this.frame));
+                ctx.fillStyle = this.color; ctx.shadowBlur = 10; ctx.shadowColor = this.color;
+                ctx.beginPath();
+                // Wing shape simplified
+                ctx.ellipse(15, -15, 20 * wing, 30, Math.PI / 4, 0, Math.PI * 2);
+                ctx.ellipse(-15, -15, 20 * wing, 30, -Math.PI / 4, 0, Math.PI * 2);
+                ctx.fill(); ctx.restore();
+            }
+        }
+
+        function initButterflies() { butterflies = []; for(let i=0; i<40; i++) butterflies.push(new Butterfly()); }
+        function animateButterflies() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            butterflies.forEach(b => { b.update(); b.draw(); });
+            requestAnimationFrame(animateButterflies);
+        }
+        initButterflies(); animateButterflies();
+        window.onresize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; initButterflies(); };
+
+        // --- GSAP Scenes ---
+        gsap.registerPlugin(TextPlugin);
+        gsap.to("#scene-1", { opacity: 1, visibility: "visible", duration: 1 });
+
+        function nextScene(idx) {
+            const curr = `#scene-${idx}`;
+            const next = `#scene-${idx + 1}`;
+            gsap.to(curr, { opacity: 0, y: -40, duration: 0.8, ease: "power2.in", onComplete: () => {
+                document.querySelector(curr).style.visibility = "hidden";
+                const n = document.querySelector(next);
+                if(n) {
+                    n.style.visibility = "visible";
+                    gsap.fromTo(next, { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 1 });
+                    if(idx === 1) animateName();
+                }
+            }});
+            gsap.to("#progress-bar", { width: `${(idx/3)*100}%` });
+        }
+
+        function animateName() {
+            gsap.from(".highlight-name", { scale: 0.5, opacity: 0, rotationX: 45, duration: 1.5, delay: 0.2, ease: "elastic.out(1, 0.5)" });
+        }
+
+        // --- Popup Logic ---
+        function triggerPopup() {
+            gsap.to("#scene-3", { opacity: 0, y: -40, duration: 0.6, onComplete: () => {
+                document.querySelector("#scene-3").style.visibility = "hidden";
+                const popup = document.querySelector("#surprise-popup");
+                popup.style.visibility = "visible";
+                gsap.to(popup, { opacity: 1, duration: 0.5 });
+                gsap.to(".popup-content", { scale: 1, duration: 0.8, ease: "back.out(1.7)" });
+                gsap.from(".cute-shayari", { opacity: 0, y: 20, delay: 0.5, duration: 1 });
+            }});
+        }
+
+        function closePopupAndProceed() {
+            gsap.to("#surprise-popup", { opacity: 0, duration: 0.5, onComplete: () => {
+                document.querySelector("#surprise-popup").style.visibility = "hidden";
+                const final = document.querySelector("#scene-4");
+                final.style.visibility = "visible";
+                gsap.fromTo("#scene-4", { opacity: 0 }, { opacity: 1, duration: 1 });
+                playProposalSequence();
+                gsap.to("#progress-bar", { width: "100%" });
+            }});
+        }
+
+        function playProposalSequence() {
+            const lines = document.querySelectorAll(".shayari-text");
+            // Animate lines one by one
+            lines.forEach((line, i) => {
+                gsap.to(line, { opacity: 1, y: 0, duration: 1, delay: i * 1.5, ease: "power2.out" });
+            });
+
+            // Reveal the YES button after lines
+            gsap.to("#proposal-ui", { 
+                opacity: 1, visibility: "visible", 
+                delay: lines.length * 1.5 + 0.5, 
+                duration: 1 
+            });
+        }
+
+        // --- The "YES" Celebration ---
+        function sheSaidYes() {
+            // 1. Confetti Explosion
+            var duration = 5 * 1000;
+            var animationEnd = Date.now() + duration;
+            var defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 999 };
+
+            var interval = setInterval(function() {
+                var timeLeft = animationEnd - Date.now();
+                if (timeLeft <= 0) { return clearInterval(interval); }
+                var particleCount = 50 * (timeLeft / duration);
+                // random origin
+                confetti(Object.assign({}, defaults, { particleCount, origin: { x: Math.random(), y: Math.random() - 0.2 } }));
+            }, 250);
+
+            // 2. Change UI
+            document.querySelector("#proposal-ui").innerHTML = "<h1 style='color: var(--gold); font-size: 3rem;'>FOREVER STARTS NOW ❤️</h1>";
+            
+            // 3. Float hearts background
+            gsap.to("body", { backgroundColor: "#1a000a", duration: 3 });
+        }
+
+        // --- Noise ---
+        const noiseC = document.getElementById('noise-canvas');
+        const noiseCtx = noiseC.getContext('2d');
+        function noise() {
+            noiseC.width = window.innerWidth; noiseC.height = window.innerHeight;
+            const idata = noiseCtx.createImageData(noiseC.width, noiseC.height);
+            const buf = new Uint32Array(idata.data.buffer);
+            for (let i = 0; i < buf.length; i++) if(Math.random()<0.1) buf[i] = 0xffffffff;
+            noiseCtx.putImageData(idata, 0, 0);
+        }
+        noise(); window.onresize = noise;
+
+    </script>
+</body>
+</html>
